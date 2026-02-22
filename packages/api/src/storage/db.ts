@@ -191,6 +191,16 @@ export class ServerDB {
     return this.db.prepare(sql).all(...params) as EventRow[];
   }
 
+  /** Get only signal events — filters out file_read/file_write/routine bash noise */
+  getSignalEventsByUser(userId: string, since?: string, limit?: number): EventRow[] {
+    let sql = "SELECT * FROM events WHERE user_id = ? AND (is_install = 1 OR is_search = 1 OR action IN ('web_search', 'web_fetch'))";
+    const params: unknown[] = [userId];
+    if (since) { sql += " AND timestamp >= ?"; params.push(since); }
+    sql += " ORDER BY timestamp DESC";
+    if (limit && limit > 0) { sql += " LIMIT ?"; params.push(limit); }
+    return this.db.prepare(sql).all(...params) as EventRow[];
+  }
+
   getInstallEventsByUser(userId: string): EventRow[] {
     return this.db.prepare(
       'SELECT * FROM events WHERE user_id = ? AND is_install = 1 ORDER BY timestamp DESC'

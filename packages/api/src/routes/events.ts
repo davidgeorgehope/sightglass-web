@@ -20,6 +20,7 @@ const EventsBodySchema = z.object({
 const EventsQuerySchema = z.object({
   since: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(10000).optional(),
+  signal: z.coerce.boolean().optional().default(true),
 });
 
 // ── POST /events ──
@@ -87,7 +88,9 @@ router.get('/', authMiddleware, (req, res) => {
     const db = req.app.get('db') as ServerDB;
 
     const query = EventsQuerySchema.parse(req.query);
-    const events = db.getEventsByUser(user.id, query.since, query.limit);
+    const events = query.signal
+      ? db.getSignalEventsByUser(user.id, query.since, query.limit)
+      : db.getEventsByUser(user.id, query.since, query.limit);
 
     res.json({
       count: events.length,
