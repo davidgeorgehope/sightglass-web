@@ -36,14 +36,29 @@ export function getSightglassDir(projectPath?: string): string {
   return path.join(projectPath ?? process.cwd(), SIGHTGLASS_DIR);
 }
 
+/** Get the global ~/.sightglass directory path */
+export function getGlobalSightglassDir(): string {
+  return path.join(os.homedir(), SIGHTGLASS_DIR);
+}
+
 /** Get the database file path */
 export function getDbPath(projectPath?: string): string {
   return path.join(getSightglassDir(projectPath), DB_FILE);
 }
 
+/** Get the global database file path */
+export function getGlobalDbPath(): string {
+  return path.join(getGlobalSightglassDir(), DB_FILE);
+}
+
 /** Get the config file path */
 export function getConfigPath(projectPath?: string): string {
   return path.join(getSightglassDir(projectPath), CONFIG_FILE);
+}
+
+/** Get the global config file path */
+export function getGlobalConfigPath(): string {
+  return path.join(getGlobalSightglassDir(), CONFIG_FILE);
 }
 
 /** Detect which agents are installed on this system */
@@ -57,6 +72,14 @@ export function detectAgents(): Record<string, { enabled: boolean; logPath: stri
   agents['claude-code'] = {
     enabled: claudeExists,
     logPath: claudeExists ? claudeLogDir : null,
+  };
+
+  // Codex
+  const codexDir = path.join(home, '.codex');
+  const codexExists = fs.existsSync(codexDir);
+  agents['codex'] = {
+    enabled: codexExists,
+    logPath: codexExists ? codexDir : null,
   };
 
   // Cursor
@@ -107,9 +130,40 @@ export function loadConfig(projectPath?: string): SightglassConfig {
   return ConfigSchema.parse(raw);
 }
 
+/** Load global config from ~/.sightglass/config.json */
+export function loadGlobalConfig(): SightglassConfig | null {
+  const configPath = getGlobalConfigPath();
+  if (!fs.existsSync(configPath)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return ConfigSchema.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/** Load config: try project-level first, then global */
+export function loadConfigWithFallback(): SightglassConfig {
+  try {
+    return loadConfig();
+  } catch {
+    const global = loadGlobalConfig();
+    if (global) return global;
+    throw new Error('No config found. Run: sightglass setup');
+  }
+}
+
 /** Save config to .sightglass/config.json */
 export function saveConfig(config: SightglassConfig, projectPath?: string): void {
   const configPath = getConfigPath(projectPath);
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+}
+
+/** Save global config to ~/.sightglass/config.json */
+export function saveGlobalConfig(config: SightglassConfig): void {
+  const dir = getGlobalSightglassDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const configPath = getGlobalConfigPath();
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
 }
 

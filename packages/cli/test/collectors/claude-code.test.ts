@@ -15,11 +15,11 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).not.toBeNull();
-    expect(result!.action).toBe('bash');
-    expect(result!.raw).toBe('npm install express');
-    expect(result!.exitCode).toBe(0);
-    expect(result!.agent).toBe('claude-code');
+    expect(result.length).toBe(1);
+    expect(result[0].action).toBe('bash');
+    expect(result[0].raw).toBe('npm install express');
+    expect(result[0].exitCode).toBe(0);
+    expect(result[0].agent).toBe('claude-code');
   });
 
   it('parses a read tool_use entry', () => {
@@ -32,9 +32,9 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).not.toBeNull();
-    expect(result!.action).toBe('file_read');
-    expect(result!.raw).toBe('package.json');
+    expect(result.length).toBe(1);
+    expect(result[0].action).toBe('file_read');
+    expect(result[0].raw).toBe('package.json');
   });
 
   it('parses a search tool_use entry', () => {
@@ -47,12 +47,12 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).not.toBeNull();
-    expect(result!.action).toBe('web_search');
-    expect(result!.raw).toBe('best node.js framework');
+    expect(result.length).toBe(1);
+    expect(result[0].action).toBe('web_search');
+    expect(result[0].raw).toBe('best node.js framework');
   });
 
-  it('returns null for non-tool_use entries', () => {
+  it('returns empty array for non-tool_use entries', () => {
     const entry: ClaudeCodeLogEntry = {
       type: 'text',
       output: 'I will set up the project',
@@ -60,10 +60,10 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).toBeNull();
+    expect(result).toHaveLength(0);
   });
 
-  it('returns null for unknown tool types', () => {
+  it('returns empty array for unknown tool types', () => {
     const entry: ClaudeCodeLogEntry = {
       type: 'tool_use',
       tool: 'unknown_tool',
@@ -72,10 +72,10 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).toBeNull();
+    expect(result).toHaveLength(0);
   });
 
-  it('handles entries without input', () => {
+  it('returns empty array for entries without input', () => {
     const entry: ClaudeCodeLogEntry = {
       type: 'tool_use',
       tool: 'bash',
@@ -83,7 +83,7 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).toBeNull();
+    expect(result).toHaveLength(0);
   });
 
   it('truncates long output to 2000 chars', () => {
@@ -97,8 +97,8 @@ describe('parseLogEntry', () => {
     };
 
     const result = parseLogEntry(entry, 'test-session');
-    expect(result).not.toBeNull();
-    expect(result!.result!.length).toBe(2000);
+    expect(result.length).toBe(1);
+    expect(result[0].result!.length).toBe(2000);
   });
 });
 
