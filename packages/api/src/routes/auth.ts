@@ -112,11 +112,22 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authMiddleware, (req, res) => {
   const user = req.user!;
+  const db = req.app.get('db') as ServerDB;
+
+  const signalEvents = db.getSignalEventsByUser(user.id);
+  const installEvents = db.getInstallEventsByUser(user.id);
+  const sessions = db.getSessionsByUser(user.id);
+
   res.json({
     id: user.id,
     email: user.email,
     apiKey: user.api_key,
     createdAt: user.created_at,
+    stats: {
+      totalSignalEvents: signalEvents.length,
+      totalInstalls: installEvents.length,
+      totalSessions: sessions.length,
+    },
   });
 });
 

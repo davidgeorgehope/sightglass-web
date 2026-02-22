@@ -45,7 +45,20 @@ app.use('/api/community', communityRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  try {
+    const stats = db.getCommunityStats();
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      stats: {
+        totalSignalEvents: stats.totalEvents,
+        topPackages: stats.topPackages.length,
+        classifications: Object.keys(stats.classificationDistribution).length,
+      },
+    });
+  } catch {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  }
 });
 
 // ── 404 handler ──

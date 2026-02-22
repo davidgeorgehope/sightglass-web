@@ -226,7 +226,7 @@ export class ServerDB {
   getCommunityStats(): CommunityStats {
     // Total events
     const totalRow = this.db.prepare(
-      'SELECT COUNT(*) as count FROM events'
+      `SELECT COUNT(*) as count FROM events WHERE is_install = 1 OR is_search = 1 OR action IN ('web_search', 'web_fetch')`
     ).get() as { count: number };
 
     // Classification distribution
@@ -234,6 +234,7 @@ export class ServerDB {
       SELECT classification, COUNT(*) as count
       FROM events
       WHERE classification IS NOT NULL
+        AND (is_install = 1 OR is_search = 1 OR action IN ('web_search', 'web_fetch'))
       GROUP BY classification
       ORDER BY count DESC
     `).all() as Array<{ classification: string; count: number }>;
@@ -266,6 +267,7 @@ export class ServerDB {
         END as risk_type,
         COUNT(*) as count
       FROM events
+      WHERE is_install = 1 OR is_search = 1 OR action IN ('web_search', 'web_fetch')
       GROUP BY risk_type
       ORDER BY count DESC
     `).all() as Array<{ risk_type: string; count: number }>;
