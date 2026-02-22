@@ -1,0 +1,17 @@
+{
+  "name": "sightglass",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Agent supply chain intelligence — see what your AI coding agents actually decide",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces --if-present",
+    "dev:web": "npm run dev -w packages/web",
+    "dev:api": "npm run dev -w packages/api"
+  },
+  "author": "David Hope",
+  "license": "MIT"
+}
