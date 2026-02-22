@@ -197,7 +197,7 @@ function ArchDiagram() {
 }
 
 // --- Pricing concept ---
-function PricingCard({ name, price, unit, features, accent, cta, highlighted }) {
+function PricingCard({ name, price, unit, features, accent, cta, highlighted, href }) {
   return (
     <div
       style={{
@@ -244,7 +244,7 @@ function PricingCard({ name, price, unit, features, accent, cta, highlighted }) 
           cursor: "pointer",
         }}
       >
-        {cta}
+        <a href={href || "/register"} style={{ textDecoration: "none", color: "inherit" }}>{cta}</a>
       </div>
     </div>
   );
@@ -315,13 +315,13 @@ export default function Landing() {
           </div>
           <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: -0.3 }}>sightglass</span>
           <span style={{ fontSize: 9, padding: "2px 6px", background: "#c9893a22", color: "#c9893a", borderRadius: 3, fontWeight: 600, marginLeft: 4, fontFamily: "'IBM Plex Mono', monospace" }}>
-            CONCEPT
+            BETA
           </span>
         </div>
         <div style={{ display: "flex", gap: 28, fontSize: 13, color: "#666" }}>
-          <span style={{ cursor: "pointer" }}>How it works</span>
-          <span style={{ cursor: "pointer" }}>Community</span>
-          <span style={{ cursor: "pointer" }}>Pricing</span>
+          <a href="#how-it-works" style={{ cursor: "pointer", textDecoration: "none", color: "inherit" }}>How it works</a>
+          <a href="#community" style={{ cursor: "pointer", textDecoration: "none", color: "inherit" }}>Community</a>
+          <a href="#pricing" style={{ cursor: "pointer", textDecoration: "none", color: "inherit" }}>Pricing</a>
           <span
             style={{
               padding: "6px 16px",
@@ -332,7 +332,7 @@ export default function Landing() {
               fontSize: 12,
               cursor: "pointer",
             }}
-          >
+           onClick={() => window.location.href="/register"}>
             Get early access
           </span>
         </div>
@@ -644,7 +644,7 @@ export default function Landing() {
             price="Free"
             unit="forever"
             accent="#3b8a6e"
-            cta="Install now"
+            cta="Install now" href="/register"
             features={[
               "Full local analysis of all agent decisions",
               "Decision chain visualization",
@@ -658,7 +658,7 @@ export default function Landing() {
             unit="/seat/mo"
             accent="#c9893a"
             highlighted
-            cta="Start trial"
+            cta="Start trial" href="/register"
             features={[
               "Everything in Developer",
               "Team-wide agent decision dashboard",
@@ -672,7 +672,7 @@ export default function Landing() {
             price="Custom"
             unit=""
             accent="#7c7cf0"
-            cta="Talk to us"
+            cta="Talk to us" href="mailto:email.djhope@gmail.com?subject=Sightglass%20Vendor%20Plan"
             features={[
               "Agent share-of-choice analytics for your tool",
               "Competitive displacement tracking",
@@ -722,7 +722,7 @@ export default function Landing() {
       {/* Footer */}
       <footer style={{ padding: "24px 40px", borderTop: "1px solid #1a1a24", display: "flex", justifyContent: "space-between", fontSize: 11, color: "#444" }}>
         <span>sightglass &mdash; agent supply chain intelligence</span>
-        <span>concept by David Hope {"\u00b7"} 2026</span>
+        <span>Built by David Hope {"\u00b7"} 2026</span>
       </footer>
     </div>
   );
