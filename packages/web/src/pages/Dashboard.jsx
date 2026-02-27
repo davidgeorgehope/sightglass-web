@@ -5,6 +5,10 @@ import useApi from '../hooks/useApi.js';
 import SessionTimeline from '../components/SessionTimeline.jsx';
 import RiskSummary from '../components/RiskSummary.jsx';
 import CommunityInsights from '../components/CommunityInsights.jsx';
+import DefaultStack from '../components/DefaultStack.jsx';
+import BuildVsBuy from '../components/BuildVsBuy.jsx';
+import RecencyGradient from '../components/RecencyGradient.jsx';
+import AgainstTheGrain from '../components/AgainstTheGrain.jsx';
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: '\u25a3' },
@@ -123,6 +127,8 @@ export default function Dashboard() {
   const [activeNav, setActiveNav] = useState('overview');
   const [events, setEvents] = useState([]);
   const [communityStats, setCommunityStats] = useState({});
+  const [categoryData, setCategoryData] = useState([]);
+  const [modelData, setModelData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -133,9 +139,11 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
       try {
-        const [eventsData, statsData] = await Promise.allSettled([
+        const [eventsData, statsData, catData, modelCmpData] = await Promise.allSettled([
           get('/api/events'),
           get('/api/community/stats'),
+          get('/api/community/categories'),
+          get('/api/community/model-comparison'),
         ]);
         if (cancelled) return;
         if (eventsData.status === 'fulfilled') {
@@ -143,6 +151,12 @@ export default function Dashboard() {
         }
         if (statsData.status === 'fulfilled') {
           setCommunityStats(statsData.value.stats || statsData.value || {});
+        }
+        if (catData.status === 'fulfilled') {
+          setCategoryData(catData.value.categories || []);
+        }
+        if (modelCmpData.status === 'fulfilled') {
+          setModelData(modelCmpData.value.categories || {});
         }
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -270,8 +284,35 @@ export default function Dashboard() {
       case 'community':
         return (
           <div>
-            <div style={sectionHeading}>Community Intelligence</div>
-            <CommunityInsights stats={communityStats} />
+            {/* The Default Stack */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={sectionHeading}>The Default Stack</div>
+              <DefaultStack categories={categoryData} />
+            </div>
+
+            {/* Build vs Buy */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={sectionHeading}>Build vs Buy</div>
+              <BuildVsBuy categories={categoryData} />
+            </div>
+
+            {/* Recency Gradient */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={sectionHeading}>Recency Gradient</div>
+              <RecencyGradient modelData={modelData} />
+            </div>
+
+            {/* Against the Grain */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={sectionHeading}>Against the Grain</div>
+              <AgainstTheGrain categories={categoryData} />
+            </div>
+
+            {/* Community Insights */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={sectionHeading}>Community Intelligence</div>
+              <CommunityInsights stats={communityStats} />
+            </div>
           </div>
         );
 

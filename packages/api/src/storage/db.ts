@@ -59,6 +59,10 @@ export interface IncomingEvent {
   isSearch?: boolean;
   abandoned?: boolean;
   timestamp: string;
+  category?: string;
+  isCustomBuild?: boolean;
+  model?: string;
+  modelVersion?: string;
 }
 
 export class ServerDB {
@@ -141,9 +145,10 @@ export class ServerDB {
       INSERT INTO events (
         id, user_id, agent, action, classification, confidence,
         package_name, package_version, package_manager,
-        is_install, is_search, abandoned, timestamp, received_at
+        is_install, is_search, abandoned, timestamp, received_at,
+        category, is_custom_build, model, model_version
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const receivedAt = new Date().toISOString();
@@ -165,6 +170,10 @@ export class ServerDB {
           e.abandoned ? 1 : 0,
           e.timestamp,
           receivedAt,
+          e.category ?? null,
+          e.isCustomBuild ? 1 : 0,
+          e.model ?? null,
+          e.modelVersion ?? null,
         );
       }
     });
@@ -382,6 +391,121 @@ export class ServerDB {
 
     results.sort((a, b) => b.count - a.count);
     return results;
+  }
+
+  // ── Category Win Rates ──
+
+  getCategoryWinRates(): Array<{
+    name: string;
+    totalPicks: number;
+    winner: { name: string; count: number; pct: number };
+    runnerUp: { name: string; count: number; pct: number } | null;
+    customBuildPct: number;
+    picks: Array<{ name: string; count: number; pct: number }>;
+  }> {
+    // Get all install events grouped by category and package
+    const rows = this.db.prepare(`
+      SELECT category, package_name, is_custom_build, COUNT(*) as count
+      FROM events
+      WHERE (is_install = 1 OR is_custom_build = 1)
+        AND category IS NOT NULL
+      GROUP BY category, package_name, is_custom_build
+      ORDER BY category, count DESC
+    `).all() as Array<{
+      category: string;
+      package_name: string | null;
+      is_custom_build: number;
+      count: number;
+    }>;
+
+    // Group by category
+    const categoryMap = new Map<string, Array<{ name: string; count: number; isCustom: boolean }>>();
+    for (const row of rows) {
+      if (!categoryMap.has(row.category)) {
+        categoryMap.set(row.category, []);
+      }
+      categoryMap.get(row.category)!.push({
+        name: row.is_custom_build ? 'Custom/DIY' : (row.package_name ?? 'unknown'),
+        count: row.count,
+        isCustom: row.is_custom_build === 1,
+      });
+    }
+
+    const results: Array<{
+      name: string;
+      totalPicks: number;
+      winner: { name: string; count: number; pct: number };
+      runnerUp: { name: string; count: number; pct: number } | null;
+      customBuildPct: number;
+      picks: Array<{ name: string; count: number; pct: number }>;
+    }> = [];
+
+    for (const [category, entries] of categoryMap) {
+      // Merge custom build entries
+      const merged = new Map<string, number>();
+      let customCount = 0;
+      for (const entry of entries) {
+        if (entry.isCustom) {
+          customCount += entry.count;
+          merged.set('Custom/DIY', (merged.get('Custom/DIY') ?? 0) + entry.count);
+        } else {
+          merged.set(entry.name, (merged.get(entry.name) ?? 0) + entry.count);
+        }
+      }
+
+      const sorted = [...merged.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+
+      const totalPicks = sorted.reduce((sum, s) => sum + s.count, 0);
+      if (totalPicks === 0) continue;
+
+      const picks = sorted.map(s => ({
+        name: s.name,
+        count: s.count,
+        pct: Math.round((s.count / totalPicks) * 1000) / 10,
+      }));
+
+      results.push({
+        name: category,
+        totalPicks,
+        winner: picks[0],
+        runnerUp: picks.length > 1 ? picks[1] : null,
+        customBuildPct: Math.round((customCount / totalPicks) * 1000) / 10,
+        picks,
+      });
+    }
+
+    return results.sort((a, b) => b.totalPicks - a.totalPicks);
+  }
+
+  // ── Model Comparison ──
+
+  getModelComparison(): Record<string, Record<string, Record<string, number>>> {
+    const rows = this.db.prepare(`
+      SELECT category, model, package_name, COUNT(*) as count
+      FROM events
+      WHERE is_install = 1
+        AND category IS NOT NULL
+        AND model IS NOT NULL
+        AND package_name IS NOT NULL
+      GROUP BY category, model, package_name
+      ORDER BY category, model, count DESC
+    `).all() as Array<{
+      category: string;
+      model: string;
+      package_name: string;
+      count: number;
+    }>;
+
+    const result: Record<string, Record<string, Record<string, number>>> = {};
+    for (const row of rows) {
+      if (!result[row.category]) result[row.category] = {};
+      if (!result[row.category][row.model]) result[row.category][row.model] = {};
+      result[row.category][row.model][row.package_name] = row.count;
+    }
+
+    return result;
   }
 
   close(): void {

@@ -105,6 +105,8 @@ app.listen(PORT, () => {
   console.log(chalk.dim('    GET    /api/community/stats'));
   console.log(chalk.dim('    GET    /api/community/velocity'));
   console.log(chalk.dim('    GET    /api/community/risks'));
+  console.log(chalk.dim('    GET    /api/community/categories'));
+  console.log(chalk.dim('    GET    /api/community/model-comparison'));
   console.log(chalk.dim('    GET    /api/health'));
   console.log('');
 });

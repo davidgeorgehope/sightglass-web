@@ -75,4 +75,32 @@ router.get('/risks', (req, res) => {
   }
 });
 
+// ── GET /community/categories ──
+
+router.get('/categories', (req, res) => {
+  try {
+    const db = req.app.get('db') as ServerDB;
+    const categories = db.getCategoryWinRates();
+
+    res.json({ categories });
+  } catch (err) {
+    console.error('Community categories error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /community/model-comparison ──
+
+router.get('/model-comparison', (req, res) => {
+  try {
+    const db = req.app.get('db') as ServerDB;
+    const categories = db.getModelComparison();
+
+    res.json({ categories });
+  } catch (err) {
+    console.error('Community model-comparison error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

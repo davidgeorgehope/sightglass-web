@@ -6,6 +6,24 @@ const palette = {
   lavender: '#a07cd4',
 };
 
+const classificationColors = {
+  'TRAINING_RECALL': palette.purple,
+  'CONTEXT_INHERITANCE': palette.orange,
+  'REACTIVE_SEARCH': palette.red,
+  'PROACTIVE_SEARCH': palette.green,
+  'USER_DIRECTED': palette.lavender,
+  'UNKNOWN': '#555',
+};
+
+const classificationLabels = {
+  'TRAINING_RECALL': 'Training Recall',
+  'CONTEXT_INHERITANCE': 'Context Inherit',
+  'REACTIVE_SEARCH': 'Reactive Search',
+  'PROACTIVE_SEARCH': 'Proactive Search',
+  'USER_DIRECTED': 'User Directed',
+  'UNKNOWN': 'Unknown',
+};
+
 function CSSBar({ value, max, color, label }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
@@ -71,7 +89,7 @@ function CSSPieChart({ data }) {
   );
 }
 
-function VelocityItem({ name, direction, pct, color }) {
+function VelocityItem({ name, direction, pct }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
       <span
@@ -100,128 +118,72 @@ function VelocityItem({ name, direction, pct, color }) {
 }
 
 export default function CommunityInsights({ stats = {} }) {
-  const velocity = stats.velocity || stats.tool_velocity || [
-    { name: 'polars', direction: 'up', pct: 340 },
-    { name: 'bun', direction: 'up', pct: 210 },
-    { name: 'date-fns', direction: 'up', pct: 85 },
-    { name: 'playwright', direction: 'up', pct: 64 },
-    { name: 'moment.js', direction: 'down', pct: 12 },
-    { name: 'request', direction: 'down', pct: 45 },
-  ];
+  // Wire real velocity data from API — transform from API format if needed
+  const rawVelocity = stats.velocity || stats.tool_velocity || [];
+  const velocity = rawVelocity.length > 0
+    ? rawVelocity.map((v) => ({
+        name: v.name || v.package_name,
+        direction: v.direction,
+        pct: v.pct || Math.abs(v.velocity || 0),
+      }))
+    : [];
 
-  const classificationDistribution = stats.classification_distribution || stats.distributions || [
-    { label: 'Training Recall', value: 73, color: palette.purple },
-    { label: 'Context Inherit', value: 12, color: palette.orange },
-    { label: 'Reactive Search', value: 8, color: palette.red },
-    { label: 'User Directed', value: 5, color: palette.green },
-    { label: 'Sub-decision', value: 2, color: palette.lavender },
-  ];
+  // Wire real classification distribution from API
+  const rawDistribution = stats.classificationDistribution || stats.classification_distribution || {};
+  let classificationDistribution;
+  if (typeof rawDistribution === 'object' && !Array.isArray(rawDistribution) && Object.keys(rawDistribution).length > 0) {
+    classificationDistribution = Object.entries(rawDistribution).map(([key, value]) => ({
+      label: classificationLabels[key] || key,
+      value: typeof value === 'number' ? value : 0,
+      color: classificationColors[key] || '#555',
+    }));
+  } else if (Array.isArray(rawDistribution) && rawDistribution.length > 0) {
+    classificationDistribution = rawDistribution;
+  } else if (stats.distributions && Array.isArray(stats.distributions)) {
+    classificationDistribution = stats.distributions;
+  } else {
+    classificationDistribution = [];
+  }
 
-  const topPackages = stats.top_packages || [
-    { name: 'express', installs: 12840 },
-    { name: 'typescript', installs: 11203 },
-    { name: 'react', installs: 10856 },
-    { name: 'lodash', installs: 8920 },
-    { name: 'axios', installs: 7654 },
-    { name: 'jsonwebtoken', installs: 6211 },
-    { name: 'dotenv', installs: 5890 },
-    { name: 'cors', installs: 5432 },
-  ];
+  // Wire real top packages from API
+  const rawTopPackages = stats.topPackages || stats.top_packages || [];
+  const topPackages = rawTopPackages.map((pkg) => ({
+    name: pkg.name || pkg.package_name,
+    installs: pkg.installs || pkg.install_count || pkg.count || 0,
+  }));
 
   const maxInstalls = topPackages.length > 0 ? topPackages[0].installs : 1;
 
   const barColors = [palette.purple, palette.orange, palette.green, palette.red, palette.lavender];
 
+  const hasData = velocity.length > 0 || classificationDistribution.length > 0 || topPackages.length > 0;
+
+  if (!hasData) {
+    return (
+      <div style={{
+        background: '#111118',
+        border: '1px solid #1e1e2a',
+        borderRadius: 10,
+        padding: '16px 20px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 12, color: '#555', padding: 20 }}>
+          No community data available yet. Start collecting and syncing agent sessions.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Tool Velocity */}
-      <div
-        style={{
-          background: '#111118',
-          border: '1px solid #1e1e2a',
-          borderRadius: 10,
-          padding: '16px 20px',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#888',
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-            fontFamily: "'IBM Plex Mono', monospace",
-            marginBottom: 14,
-            paddingBottom: 10,
-            borderBottom: '1px solid #1e1e2a',
-          }}
-        >
-          Tool Velocity
-          <span style={{ color: '#555', fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8 }}>
-            Trending packages this month
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <div style={{ fontSize: 10, color: '#3b8a6e', marginBottom: 8, fontWeight: 600 }}>RISING</div>
-            {velocity
-              .filter((v) => v.direction === 'up')
-              .map((v, i) => (
-                <VelocityItem key={i} {...v} />
-              ))}
-          </div>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <div style={{ fontSize: 10, color: '#c94a4a', marginBottom: 8, fontWeight: 600 }}>DECLINING</div>
-            {velocity
-              .filter((v) => v.direction === 'down')
-              .map((v, i) => (
-                <VelocityItem key={i} {...v} />
-              ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Classification Distribution + Top Packages side by side */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        {/* Classification Distribution */}
+      {velocity.length > 0 && (
         <div
           style={{
             background: '#111118',
             border: '1px solid #1e1e2a',
             borderRadius: 10,
             padding: '16px 20px',
-            flex: 1,
-            minWidth: 260,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#888',
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              fontFamily: "'IBM Plex Mono', monospace",
-              marginBottom: 16,
-              paddingBottom: 10,
-              borderBottom: '1px solid #1e1e2a',
-            }}
-          >
-            Classification Distribution
-          </div>
-          <CSSPieChart data={classificationDistribution} />
-        </div>
-
-        {/* Top Packages */}
-        <div
-          style={{
-            background: '#111118',
-            border: '1px solid #1e1e2a',
-            borderRadius: 10,
-            padding: '16px 20px',
-            flex: 1,
-            minWidth: 260,
           }}
         >
           <div
@@ -237,18 +199,104 @@ export default function CommunityInsights({ stats = {} }) {
               borderBottom: '1px solid #1e1e2a',
             }}
           >
-            Top Packages by Install Count
+            Tool Velocity
+            <span style={{ color: '#555', fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8 }}>
+              Trending packages this month
+            </span>
           </div>
-          {topPackages.map((pkg, i) => (
-            <CSSBar
-              key={i}
-              label={pkg.name}
-              value={pkg.installs}
-              max={maxInstalls}
-              color={barColors[i % barColors.length]}
-            />
-          ))}
+
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontSize: 10, color: '#3b8a6e', marginBottom: 8, fontWeight: 600 }}>RISING</div>
+              {velocity
+                .filter((v) => v.direction === 'up')
+                .map((v, i) => (
+                  <VelocityItem key={i} {...v} />
+                ))}
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontSize: 10, color: '#c94a4a', marginBottom: 8, fontWeight: 600 }}>DECLINING</div>
+              {velocity
+                .filter((v) => v.direction === 'down')
+                .map((v, i) => (
+                  <VelocityItem key={i} {...v} />
+                ))}
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* Classification Distribution + Top Packages side by side */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {/* Classification Distribution */}
+        {classificationDistribution.length > 0 && (
+          <div
+            style={{
+              background: '#111118',
+              border: '1px solid #1e1e2a',
+              borderRadius: 10,
+              padding: '16px 20px',
+              flex: 1,
+              minWidth: 260,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                fontFamily: "'IBM Plex Mono', monospace",
+                marginBottom: 16,
+                paddingBottom: 10,
+                borderBottom: '1px solid #1e1e2a',
+              }}
+            >
+              Classification Distribution
+            </div>
+            <CSSPieChart data={classificationDistribution} />
+          </div>
+        )}
+
+        {/* Top Packages */}
+        {topPackages.length > 0 && (
+          <div
+            style={{
+              background: '#111118',
+              border: '1px solid #1e1e2a',
+              borderRadius: 10,
+              padding: '16px 20px',
+              flex: 1,
+              minWidth: 260,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                fontFamily: "'IBM Plex Mono', monospace",
+                marginBottom: 14,
+                paddingBottom: 10,
+                borderBottom: '1px solid #1e1e2a',
+              }}
+            >
+              Top Packages by Install Count
+            </div>
+            {topPackages.map((pkg, i) => (
+              <CSSBar
+                key={i}
+                label={pkg.name}
+                value={pkg.installs}
+                max={maxInstalls}
+                color={barColors[i % barColors.length]}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
