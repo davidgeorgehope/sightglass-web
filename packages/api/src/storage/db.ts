@@ -40,6 +40,17 @@ export interface SessionAggregateRow {
   created_at: string;
 }
 
+export interface EvaluationRow {
+  id: string;
+  user_id: string;
+  package_name: string;
+  package_manager: string | null;
+  command: string | null;
+  verdict: string;
+  gemini_response: string | null;
+  created_at: string;
+}
+
 export interface CommunityStats {
   totalEvents: number;
   classificationDistribution: Record<string, number>;
@@ -506,6 +517,40 @@ export class ServerDB {
     }
 
     return result;
+  }
+
+  // ── Evaluations ──
+
+  insertEvaluation(
+    userId: string,
+    packageName: string,
+    packageManager: string | null,
+    command: string | null,
+    verdict: string,
+    geminiResponse: string | null,
+  ): EvaluationRow {
+    const id = uuid();
+    this.db.prepare(`
+      INSERT INTO evaluations (id, user_id, package_name, package_manager, command, verdict, gemini_response)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, userId, packageName, packageManager, command, verdict, geminiResponse);
+
+    return {
+      id,
+      user_id: userId,
+      package_name: packageName,
+      package_manager: packageManager,
+      command,
+      verdict,
+      gemini_response: geminiResponse,
+      created_at: new Date().toISOString(),
+    };
+  }
+
+  getEvaluationsByUser(userId: string, limit = 50): EvaluationRow[] {
+    return this.db.prepare(
+      'SELECT * FROM evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?'
+    ).all(userId, limit) as EvaluationRow[];
   }
 
   close(): void {

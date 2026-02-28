@@ -394,6 +394,39 @@ program
         console.log(chalk.yellow('  No agents detected. Install Claude Code, Cursor, or Windsurf.'));
       }
 
+      // Write/merge .claude/settings.json with PreToolUse hook
+      try {
+        const claudeDir = path.join(process.cwd(), '.claude');
+        const settingsPath = path.join(claudeDir, 'settings.json');
+        fs.mkdirSync(claudeDir, { recursive: true });
+
+        let settings: Record<string, unknown> = {};
+        if (fs.existsSync(settingsPath)) {
+          try {
+            settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+          } catch {
+            // Ignore malformed settings, we'll overwrite
+          }
+        }
+
+        // Merge hooks config
+        const hooks = (settings.hooks ?? {}) as Record<string, unknown>;
+        hooks.PreToolUse = [{
+          matcher: 'Bash',
+          hooks: [{
+            type: 'command',
+            command: 'npx sightglass hook',
+          }],
+        }];
+        settings.hooks = hooks;
+
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+        console.log(chalk.green(`  ✓`) + ' Claude Code hook installed at .claude/settings.json');
+      } catch (hookErr) {
+        console.log(chalk.yellow('  ⚠ Could not write .claude/settings.json'));
+        console.log(chalk.dim(`    ${hookErr instanceof Error ? hookErr.message : String(hookErr)}`));
+      }
+
       console.log('');
       console.log(chalk.dim('  Next steps:'));
       console.log(chalk.dim('    sightglass watch --live    Watch agent sessions in real-time'));
@@ -404,6 +437,16 @@ program
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));
       process.exit(1);
     }
+  });
+
+// ── sightglass hook ──
+
+program
+  .command('hook')
+  .description('Handle Claude Code PreToolUse hook (reads stdin)')
+  .action(async () => {
+    // Import runs the hook's main() which reads stdin and exits
+    await import('./hooks/pretooluse.js');
   });
 
 // ── sightglass watch ──

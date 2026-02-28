@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import eventsRoutes from './routes/events.js';
 import sessionsRoutes from './routes/sessions.js';
 import communityRoutes from './routes/community.js';
+import evaluateRoutes from './routes/evaluate.js';
 
 // ── Configuration ──
 
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/evaluate', evaluateRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -107,6 +109,7 @@ app.listen(PORT, () => {
   console.log(chalk.dim('    GET    /api/community/risks'));
   console.log(chalk.dim('    GET    /api/community/categories'));
   console.log(chalk.dim('    GET    /api/community/model-comparison'));
+  console.log(chalk.dim('    POST   /api/evaluate'));
   console.log(chalk.dim('    GET    /api/health'));
   console.log('');
 });

@@ -68,4 +68,24 @@ export const MIGRATIONS = [
       INSERT OR IGNORE INTO schema_version (version) VALUES (2);
     `,
   },
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE IF NOT EXISTS evaluations (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        package_name TEXT NOT NULL,
+        package_manager TEXT,
+        command TEXT,
+        verdict TEXT NOT NULL,
+        gemini_response TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_evaluations_user ON evaluations(user_id);
+      CREATE INDEX IF NOT EXISTS idx_evaluations_package ON evaluations(package_name);
+
+      INSERT OR IGNORE INTO schema_version (version) VALUES (3);
+    `,
+  },
 ];
