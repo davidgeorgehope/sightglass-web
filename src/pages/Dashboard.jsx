@@ -145,6 +145,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSession, setSelectedSession] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalSessions, setTotalSessions] = useState(0);
 
   useEffect(function() {
     var cancelled = false;
@@ -153,12 +156,17 @@ export default function Dashboard() {
       setError("");
       try {
         var results = await Promise.allSettled([
-          get("/api/ingest/sessions"),
+          get("/api/ingest/sessions?page=" + page + "&limit=10"),
           get("/api/community/stats"),
           get("/api/community/categories"),
         ]);
         if (cancelled) return;
-        if (results[0].status === "fulfilled") setSessions(results[0].value.sessions || []);
+        if (results[0].status === "fulfilled") {
+          var d = results[0].value;
+          setSessions(d.sessions || []);
+          setTotalPages(d.pages || 1);
+          setTotalSessions(d.total || 0);
+        }
         if (results[1].status === "fulfilled") setCommunityStats(results[1].value.stats || results[1].value || {});
         if (results[2].status === "fulfilled") setCategoryData(results[2].value.categories || []);
       } catch (err) {
@@ -169,11 +177,10 @@ export default function Dashboard() {
     }
     fetchData();
     return function() { cancelled = true; };
-  }, [get]);
+  }, [get, page]);
 
   var handleLogout = function() { logout(); navigate("/login"); };
 
-  var totalSessions = sessions.length;
   var totalEvents = sessions.reduce(function(s, x) { return s + (x.total_entries || 0); }, 0);
   var totalInstalls = sessions.reduce(function(s, x) { return s + (x.installs || 0); }, 0);
   var totalToolCalls = sessions.reduce(function(s, x) { return s + (x.tool_uses || 0); }, 0);
@@ -245,6 +252,21 @@ export default function Dashboard() {
               return <SessionCard key={s.session_id || i} session={s} onSelect={function(s) { setSelectedSession(s); setActiveNav("session-detail"); }} />;
             })}
           </div>
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #1e1e2a" }}>
+              <button onClick={function() { setPage(function(p) { return Math.max(1, p - 1); }); }} disabled={page <= 1}
+                style={{ background: page <= 1 ? "#1a1a24" : "#1e1e2a", color: page <= 1 ? "#444" : "#888", border: "1px solid #2a2a3a", borderRadius: 6, padding: "6px 14px", cursor: page <= 1 ? "default" : "pointer", fontSize: 12, fontFamily: "monospace" }}>
+                {"<"} Prev
+              </button>
+              <span style={{ fontSize: 12, color: "#666", fontFamily: "monospace" }}>
+                {page} / {totalPages}
+              </span>
+              <button onClick={function() { setPage(function(p) { return Math.min(totalPages, p + 1); }); }} disabled={page >= totalPages}
+                style={{ background: page >= totalPages ? "#1a1a24" : "#1e1e2a", color: page >= totalPages ? "#444" : "#888", border: "1px solid #2a2a3a", borderRadius: 6, padding: "6px 14px", cursor: page >= totalPages ? "default" : "pointer", fontSize: 12, fontFamily: "monospace" }}>
+                Next {">"}
+              </button>
+            </div>
+          )}
         </div>
       );
     }
