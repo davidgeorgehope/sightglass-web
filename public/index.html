@@ -886,7 +886,14 @@ footer a:hover {
 <body>
 
 <!-- HERO -->
-<section class="hero">
+<nav style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;max-width:900px;margin:0 auto;">
+    <span style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);">sightglass</span>
+    <div style="display:flex;gap:16px;align-items:center;">
+      <a href="/login" style="font-family:var(--mono);font-size:13px;color:var(--text-dim);text-decoration:none;">Log in</a>
+      <a href="/register" style="font-family:var(--mono);font-size:13px;padding:8px 16px;background:var(--green);color:var(--bg);border-radius:4px;text-decoration:none;font-weight:600;">Sign up</a>
+    </div>
+  </nav>
+  <section class="hero">
   <div class="container">
     <div class="hero__label">Now with Claude Code hooks</div>
     <h1>Your agents don't evaluate.<br>They <em>recall.</em></h1>
@@ -898,7 +905,7 @@ footer a:hover {
         <span class="prompt">$</span>
         <span>npx sightglass init</span>
       </div>
-      <a href="#" class="hero__btn">Install free</a>
+      <a href="/register" class="hero__btn">Sign up free</a>
     </div>
     <div class="hero__meta">
       <span>Works with Claude Code</span>
@@ -1173,7 +1180,7 @@ footer a:hover {
         <span class="prompt">$</span>
         <span>npx sightglass init</span>
       </div>
-      <a href="#" class="hero__btn">Install free</a>
+      <a href="/register" class="hero__btn">Sign up free</a>
     </div>
     <div class="hero__meta">
       <span>Open source</span>
