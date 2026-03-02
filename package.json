@@ -1,17 +1,22 @@
 {
-  "name": "sightglass",
+  "name": "@sightglass/web",
   "private": true,
   "version": "0.1.0",
-  "description": "Agent supply chain intelligence — see what your AI coding agents actually decide",
-  "workspaces": [
-    "packages/*"
-  ],
+  "type": "module",
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm test --workspaces --if-present",
-    "dev:web": "npm run dev -w packages/web",
-    "dev:api": "npm run dev -w packages/api"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "author": "David Hope",
-  "license": "MIT"
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "vite": "^7.3.1"
+  }
 }
