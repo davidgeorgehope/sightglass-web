@@ -148,6 +148,7 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalSessions, setTotalSessions] = useState(0);
+  const [globalStats, setGlobalStats] = useState({});
 
   useEffect(function() {
     var cancelled = false;
@@ -159,6 +160,7 @@ export default function Dashboard() {
           get("/api/ingest/sessions?page=" + page + "&limit=10"),
           get("/api/community/stats"),
           get("/api/community/categories"),
+          get("/api/ingest/stats"),
         ]);
         if (cancelled) return;
         if (results[0].status === "fulfilled") {
@@ -169,6 +171,7 @@ export default function Dashboard() {
         }
         if (results[1].status === "fulfilled") setCommunityStats(results[1].value.stats || results[1].value || {});
         if (results[2].status === "fulfilled") setCategoryData(results[2].value.categories || []);
+        if (results[3].status === "fulfilled") setGlobalStats(results[3].value || {});
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -181,9 +184,9 @@ export default function Dashboard() {
 
   var handleLogout = function() { logout(); navigate("/login"); };
 
-  var totalEvents = sessions.reduce(function(s, x) { return s + (x.total_entries || 0); }, 0);
-  var totalInstalls = sessions.reduce(function(s, x) { return s + (x.installs || 0); }, 0);
-  var totalToolCalls = sessions.reduce(function(s, x) { return s + (x.tool_uses || 0); }, 0);
+  var totalEvents = globalStats.total_entries || 0;
+  var totalInstalls = globalStats.total_installs || 0;
+  var totalToolCalls = globalStats.total_tool_uses || 0;
 
   var byProject = {};
   sessions.forEach(function(s) {
@@ -225,9 +228,12 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ marginBottom: 24 }}>
-            <div style={sectionHeading}>Recent Sessions</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={Object.assign({}, sectionHeading, { marginBottom: 0 })}>Recent Sessions</div>
+              <div onClick={function() { setActiveNav("sessions"); }} style={{ fontSize: 11, color: "#7c7cf0", cursor: "pointer" }}>View all {totalSessions} →</div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sessions.slice(0, 8).map(function(s, i) {
+              {sessions.slice(0, 5).map(function(s, i) {
                 return <SessionCard key={s.session_id || i} session={s} onSelect={function(s) { setSelectedSession(s); setActiveNav("session-detail"); }} />;
               })}
             </div>
