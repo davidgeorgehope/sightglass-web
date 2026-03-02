@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sightglass — Your agents don't evaluate. They recall.</title>
+<meta name="description" content="Sightglass intercepts your AI agent's dependency decisions and injects real-time evaluation intelligence. Stop letting training data choose your stack.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b;
+  --surface: #111113;
+  --surface-2: #18181b;
+  --border: #27272a;
+  --border-bright: #3f3f46;
+  --text: #fafafa;
+  --text-dim: #a1a1aa;
+  --text-muted: #71717a;
+  --green: #22c55e;
+  --green-dim: #16a34a;
+  --green-glow: rgba(34, 197, 94, 0.15);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.15);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.1);
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Source Serif 4', Georgia, serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--green);
+  color: var(--bg);
+}
+
+/* Layout */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.container--wide {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ============================================
+   HERO
+   ============================================ */
+.hero {
+  padding: 120px 0 80px;
+  position: relative;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.hero__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 32px;
+  padding: 6px 14px;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 4px;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.hero__label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(36px, 5.5vw, 56px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--green);
+}
+
+.hero__sub {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text-dim);
+  max-width: 640px;
+  margin-bottom: 48px;
+  font-weight: 400;
+}
+
+.hero__install {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-width: 520px;
+}
+
+.hero__cmd {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.hero__cmd .prompt {
+  color: var(--green);
+  user-select: none;
+}
+
+.hero__btn {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--green);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--green);
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+
+.hero__btn:hover {
+  background: var(--green-dim);
+}
+
+.hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.hero__meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero__meta span::before {
+  content: '·';
+  color: var(--border-bright);
+}
+
+.hero__meta span:first-child::before {
+  display: none;
+}
+
+/* ============================================
+   DEMO — the before/after hook visualization
+   ============================================ */
+.demo {
+  padding: 100px 0;
+  position: relative;
+}
+
+.demo::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.demo h2 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.demo__desc {
+  color: var(--text-dim);
+  max-width: 600px;
+  margin-bottom: 48px;
+  font-size: 15px;
+}
+
+.demo__grid {
+  display: grid;
+  grid-template-columns: 1fr 48px 1fr;
+  gap: 0;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .demo__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .demo__arrow { display: none; }
+}
+
+.demo__panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.demo__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.demo__panel-header .tag {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.tag--red {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.tag--green {
+  background: var(--green-glow);
+  color: var(--green);
+}
+
+.demo__panel-body {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.demo__line {
+  padding: 4px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.demo__line .dim { color: var(--text-muted); }
+.demo__line .green { color: var(--green); }
+.demo__line .amber { color: var(--amber); }
+.demo__line .red { color: var(--red); }
+.demo__line .blue { color: var(--blue); }
+
+.demo__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 60px;
+  color: var(--green);
+  font-size: 24px;
+}
+
+.demo__eval {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--blue-dim);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+
+.demo__eval strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.demo__eval a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.demo__eval a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   STATS
+   ============================================ */
+.stats {
+  padding: 80px 0;
+  position: relative;
+}
+
+.stats::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.stats__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .stats__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat {
+  padding: 32px 28px;
+  background: var(--surface);
+}
+
+.stat__number {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat__label {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.stat__detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ============================================
+   PROBLEM
+   ============================================ */
+.problem {
+  padding: 100px 0;
+  position: relative;
+}
+
+.problem::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.problem h2 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 48px;
+  max-width: 640px;
+}
+
+.problem__items {
+  display: grid;
+  gap: 32px;
+}
+
+.problem__item {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.problem__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 16px;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.problem__item h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.problem__item p {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ============================================
+   HOW IT WORKS
+   ============================================ */
+.how {
+  padding: 100px 0;
+  position: relative;
+}
+
+.how::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.how h2 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.how__desc {
+  color: var(--text-dim);
+  max-width: 600px;
+  margin-bottom: 56px;
+  font-size: 15px;
+}
+
+.how__steps {
+  display: grid;
+  gap: 2px;
+}
+
+.how__step {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 24px;
+  align-items: start;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.how__step:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.how__step:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.how__step-num {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.how__step h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.how__step p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.how__step code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--amber);
+}
+
+/* ============================================
+   QUOTE / THESIS
+   ============================================ */
+.thesis {
+  padding: 100px 0;
+  position: relative;
+}
+
+.thesis::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.thesis__block {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.thesis__block blockquote {
+  font-family: var(--serif);
+  font-size: clamp(22px, 3.5vw, 32px);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.thesis__block cite {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: block;
+}
+
+/* ============================================
+   COMMUNITY
+   ============================================ */
+.community {
+  padding: 100px 0;
+  position: relative;
+}
+
+.community::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.community h2 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.community__desc {
+  color: var(--text-dim);
+  max-width: 640px;
+  margin-bottom: 48px;
+  font-size: 15px;
+}
+
+.community__cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .community__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.community__card {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.community__card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.community__card p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.community__card .example {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.community__card .example span {
+  color: var(--green);
+}
+
+/* ============================================
+   VENDOR TEASER
+   ============================================ */
+.vendor {
+  padding: 100px 0;
+  position: relative;
+}
+
+.vendor::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.vendor__inner {
+  padding: 48px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(34, 197, 94, 0.03) 100%);
+}
+
+.vendor h2 {
+  font-family: var(--serif);
+  font-size: clamp(24px, 3.5vw, 32px);
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.vendor__desc {
+  color: var(--text-dim);
+  max-width: 580px;
+  margin-bottom: 32px;
+  font-size: 15px;
+}
+
+.vendor__points {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.vendor__point {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.vendor__point::before {
+  content: '→';
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.vendor__cta {
+  font-size: 13px;
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.vendor__cta:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   PRIVACY
+   ============================================ */
+.privacy {
+  padding: 60px 0;
+  position: relative;
+}
+
+.privacy::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.privacy__inner {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .privacy__inner {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.privacy h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.privacy p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ============================================
+   CTA
+   ============================================ */
+.cta {
+  padding: 120px 0;
+  text-align: center;
+}
+
+.cta h2 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.cta p {
+  color: var(--text-dim);
+  font-size: 15px;
+  margin-bottom: 40px;
+}
+
+.cta .hero__install {
+  margin: 0 auto;
+}
+
+.cta .hero__meta {
+  justify-content: center;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+footer {
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 80px 0 60px; }
+  .hero__install { flex-direction: column; max-width: 100%; }
+  .hero__cmd { border-right: 1px solid var(--border); border-radius: 6px 6px 0 0; border-bottom: none; }
+  .hero__btn { border-radius: 0 0 6px 6px; justify-content: center; }
+  .vendor__inner { padding: 28px; }
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero__label">Now with Claude Code hooks</div>
+    <h1>Your agents don't evaluate.<br>They <em>recall.</em></h1>
+    <p class="hero__sub">
+      AI coding agents choose dependencies based on training data popularity, not fitness for purpose. Sightglass intercepts those decisions and injects real-time evaluation — alternatives, CVEs, documentation — so your agent makes informed choices instead of reflexive ones.
+    </p>
+    <div class="hero__install">
+      <div class="hero__cmd">
+        <span class="prompt">$</span>
+        <span>npx sightglass init</span>
+      </div>
+      <a href="#" class="hero__btn">Install free</a>
+    </div>
+    <div class="hero__meta">
+      <span>Works with Claude Code</span>
+      <span>Zero config</span>
+      <span>Your data stays local</span>
+      <span>Open source</span>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo">
+  <div class="container--wide">
+    <div class="section-label">See it in action</div>
+    <h2>Before and after Sightglass</h2>
+    <p class="demo__desc">
+      Without Sightglass, your agent installs packages on autopilot. With it, every dependency decision gets five seconds of deliberation.
+    </p>
+    <div class="demo__grid">
+      <!-- BEFORE -->
+      <div class="demo__panel">
+        <div class="demo__panel-header">
+          <span>Without Sightglass</span>
+          <span class="tag tag--red">recall</span>
+        </div>
+        <div class="demo__panel-body">
+          <div class="demo__line"><span class="dim">claude ›</span> I'll add date handling to the project.</div>
+          <div class="demo__line"><span class="dim">claude ›</span> <span class="amber">npm install moment</span></div>
+          <div class="demo__line"><span class="dim">claude ›</span> <span class="green">✓ installed moment@2.30.1</span></div>
+          <div class="demo__line"><span class="dim">claude ›</span> Done. Imported moment in utils/date.ts</div>
+          <br>
+          <div class="demo__line"><span class="red">No evaluation. No alternatives considered.</span></div>
+          <div class="demo__line"><span class="red">Maintenance-mode package chosen by reflex.</span></div>
+        </div>
+      </div>
+
+      <div class="demo__arrow">→</div>
+
+      <!-- AFTER -->
+      <div class="demo__panel">
+        <div class="demo__panel-header">
+          <span>With Sightglass</span>
+          <span class="tag tag--green">evaluated</span>
+        </div>
+        <div class="demo__panel-body">
+          <div class="demo__line"><span class="dim">claude ›</span> I'll add date handling to the project.</div>
+          <div class="demo__line"><span class="dim">claude ›</span> <span class="amber">npm install moment</span></div>
+          <div class="demo__line"><span class="green">⏸ sightglass intercepted — evaluating...</span></div>
+          <div class="demo__eval">
+            <strong>⚡ Sightglass Evaluation: moment.js</strong><br><br>
+            <strong>Status:</strong> Maintenance mode since Sept 2020. Maintainers recommend alternatives for new projects.<br>
+            <strong>Size:</strong> 290KB minified (72KB gzipped)<br>
+            <strong>CVEs:</strong> Path traversal vulnerability in older versions<br><br>
+            <strong>Alternatives:</strong><br>
+            → <strong>date-fns</strong> — 6.2KB gzipped, tree-shakeable — <a href="#">docs</a><br>
+            → <strong>Luxon</strong> — 21KB gzipped, immutable — <a href="#">docs</a><br>
+            → <strong>Temporal API</strong> — native, zero dependency — <a href="#">docs</a><br><br>
+            <em>Evaluate which best fits this project before proceeding.</em>
+          </div>
+          <br>
+          <div class="demo__line"><span class="dim">claude ›</span> Good catch. date-fns is a better fit here.</div>
+          <div class="demo__line"><span class="dim">claude ›</span> <span class="green">npm install date-fns</span></div>
+          <div class="demo__line"><span class="green">✓ sightglass: informed choice logged</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="container">
+    <div class="stats__grid">
+      <div class="stat">
+        <div class="stat__number">12/20</div>
+        <div class="stat__label">categories where Claude Code builds custom instead of picking any tool</div>
+        <div class="stat__detail"><a href="https://amplifying.ai/research/claude-code-picks" style="color:var(--text-muted);text-decoration:underline;">Amplifying.ai, Feb 2026</a></div>
+      </div>
+      <div class="stat">
+        <div class="stat__number">0</div>
+        <div class="stat__label">primary picks for Express.js — the world's most popular Node framework is invisible to agents</div>
+        <div class="stat__detail">2,430 responses across 3 models</div>
+      </div>
+      <div class="stat">
+        <div class="stat__number">79→0%</div>
+        <div class="stat__label">Prisma's pick rate from Sonnet to Opus 4.6. Your stack depends on which model version you run.</div>
+        <div class="stat__detail">Drizzle went 21% → 100% in the same period</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="container">
+    <div class="section-label">The problem</div>
+    <h2>AI agents don't choose tools. They replay whatever was popular when they were trained.</h2>
+    <div class="problem__items">
+      <div class="problem__item">
+        <div class="problem__icon">◎</div>
+        <div>
+          <h3>Training data incumbency</h3>
+          <p>Express.js — the world's most popular Node framework — gets zero primary picks from Claude Code. Redux, 0 of 88. Meanwhile Railway gets 82% of Python deployment picks over AWS, GCP, and Azure combined. The training corpus creates winners and losers with no evaluation. <a href="https://amplifying.ai/research/claude-code-picks" style="color:var(--blue);text-decoration:none;">Research: Amplifying.ai</a></p>
+        </div>
+      </div>
+      <div class="problem__item">
+        <div class="problem__icon">◇</div>
+        <div>
+          <h3>Zero deliberation</h3>
+          <p>Your agent installed 47 dependencies in the last session. It evaluated zero of them. Nobody prompted it to consider alternatives. Nobody asked "is this the best choice?" The reflex fires and the install happens.</p>
+        </div>
+      </div>
+      <div class="problem__item">
+        <div class="problem__icon">△</div>
+        <div>
+          <h3>Invisible supply chain risk</h3>
+          <p>Each dependency is an attack surface, a license obligation, and an architectural commitment — made without deliberation. Your compliance team can't audit what they can't see. Your CISO can't approve what has no trail.</p>
+        </div>
+      </div>
+      <div class="problem__item">
+        <div class="problem__icon">▽</div>
+        <div>
+          <h3>Agent-driven monoculture</h3>
+          <p>GitHub Actions 94%, Stripe 91%, shadcn/ui 90%, Vercel 100% for JS deployment. When agents pick tools, they pick near-monopolies. And it shifts with every model version — Prisma went from 79% to 0% between Sonnet and Opus 4.6. Your architecture is a function of which model you ran that day.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2>One hook. Five seconds of deliberation.</h2>
+    <p class="how__desc">
+      Sightglass registers a Claude Code <code>PreToolUse</code> hook. When your agent reaches for a package, Sightglass intercepts, evaluates, and injects intelligence — all before the install runs.
+    </p>
+    <div class="how__steps">
+      <div class="how__step">
+        <div class="how__step-num">1</div>
+        <div>
+          <h3>Intercept</h3>
+          <p>Agent calls <code>npm install</code>, <code>pip install</code>, or <code>cargo add</code>. The <code>PreToolUse</code> hook fires and Sightglass catches it before execution.</p>
+        </div>
+      </div>
+      <div class="how__step">
+        <div class="how__step-num">2</div>
+        <div>
+          <h3>Evaluate</h3>
+          <p>A grounded LLM call (with web search) checks: Is this package actively maintained? Any known CVEs? What are the current alternatives? How does bundle size compare? Real-time data, not training recall.</p>
+        </div>
+      </div>
+      <div class="how__step">
+        <div class="how__step-num">3</div>
+        <div>
+          <h3>Inject</h3>
+          <p>The evaluation — including alternatives and documentation links — is injected back into the agent's context. The agent can read the docs, compare options, and make an informed decision.</p>
+        </div>
+      </div>
+      <div class="how__step">
+        <div class="how__step-num">4</div>
+        <div>
+          <h3>Learn</h3>
+          <p>Every decision is logged locally. What was the original choice? What did the agent switch to? This data feeds community intelligence — aggregate patterns that make every Sightglass user's agents smarter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THESIS -->
+<section class="thesis">
+  <div class="container">
+    <div class="thesis__block">
+      <blockquote>
+        "AWS, Google Cloud, and Azure received zero primary deployment picks across 112 responses. Railway got 82%. The most valuable infrastructure companies in the world are invisible at the point of agent decision."
+      </blockquote>
+      <cite><a href="https://amplifying.ai/research/claude-code-picks" style="color:var(--text-muted);text-decoration:none;">Amplifying.ai — "What Claude Code Actually Chooses", Feb 2026</a></cite>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNITY INTELLIGENCE -->
+<section class="community">
+  <div class="container">
+    <div class="section-label">Community intelligence</div>
+    <h2>Every decision is a signal.</h2>
+    <p class="community__desc">
+      When thousands of developers instrument their agents, we build the first real-time map of how AI makes technical decisions. This data doesn't exist anywhere else.
+    </p>
+    <div class="community__cards">
+      <div class="community__card">
+        <h3>Decision patterns</h3>
+        <p>See how agents decide across the community. Which packages get chosen, which get replaced, and why.</p>
+        <div class="example">
+          After evaluation: <span>62% switch</span> from moment → date-fns
+        </div>
+      </div>
+      <div class="community__card">
+        <h3>Tool velocity</h3>
+        <p>Which packages are agents adopting or abandoning fastest?</p>
+        <div class="example">
+          <span>polars ↑ 340%</span> · moment.js ↓ 12% per month
+        </div>
+      </div>
+      <div class="community__card">
+        <h3>Risk surface</h3>
+        <p>Aggregate vulnerability exposure from agent decisions across the ecosystem.</p>
+        <div class="example">
+          jsonwebtoken CVE affects <span>~23% of agent-built</span> Node.js APIs
+        </div>
+      </div>
+      <div class="community__card">
+        <h3>Recall vs. evaluation</h3>
+        <p>Track how often deliberation changes the outcome. Measure the gap between reflex and informed choice.</p>
+        <div class="example">
+          Sightglass users: <span>41% different choice</span> after evaluation
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VENDOR TEASER -->
+<section class="vendor">
+  <div class="container">
+    <div class="vendor__inner">
+      <div class="section-label">For tool vendors</div>
+      <h2>Your next competitor isn't another company.<br>It's training data.</h2>
+      <p class="vendor__desc">
+        Express.js: most popular Node framework, zero agent picks. AWS: most used cloud provider, zero deployment picks. If agents don't recommend you, a growing share of new projects will never know you exist.
+      </p>
+      <div class="vendor__points">
+        <div class="vendor__point">Agent share-of-choice analytics — how often agents choose your tool vs. competitors</div>
+        <div class="vendor__point">Surface your tool as a recommended alternative at the exact moment an agent considers your category</div>
+        <div class="vendor__point">Competitive displacement tracking — when agents switch away from you, where do they go?</div>
+        <div class="vendor__point">Ethical, transparent, user-controlled — developers always see why an alternative was suggested</div>
+      </div>
+      <a href="mailto:david@sightglass.dev" class="vendor__cta">Talk to us →</a>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH -->
+<section class="privacy">
+  <div class="container">
+    <div class="privacy__inner">
+      <h3>Based on real data</h3>
+      <p>Our thesis is informed by <a href="https://amplifying.ai/research/claude-code-picks" style="color:var(--blue);text-decoration:none;">Amplifying.ai's research</a> — 2,430 Claude Code responses across 3 models, 4 project types, and 20 tool categories. The findings are stark: agents shape the modern stack through recall, not evaluation. Sightglass exists to change that.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="privacy">
+  <div class="container">
+    <div class="privacy__inner">
+      <h3>Privacy-first</h3>
+      <p>Sightglass runs locally by default. Your code, your dependencies, your decisions — all analyzed on your machine. Community intelligence uses only anonymized, aggregated patterns. Opt-in at every level. Air-gapped mode for enterprise.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <h2>Stop letting training data choose your stack.</h2>
+    <p>30 seconds to install. Your next agent session will be smarter.</p>
+    <div class="hero__install">
+      <div class="hero__cmd">
+        <span class="prompt">$</span>
+        <span>npx sightglass init</span>
+      </div>
+      <a href="#" class="hero__btn">Install free</a>
+    </div>
+    <div class="hero__meta">
+      <span>Open source</span>
+      <span>Local-first</span>
+      <span>Claude Code ready</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <span>sightglass — agent decision intelligence</span>
+    <span>Built by <a href="https://github.com/davidgeorgehope" target="_blank">David Hope</a> · 2026</span>
+  </div>
+</footer>
+
+</body>
+</html>
